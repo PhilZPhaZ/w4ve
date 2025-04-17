@@ -1,5 +1,5 @@
 import numpy as np
-from settings import N, K, DAMPING, RESORTING_FORCE, PROPAGATION_RANGE, PROPAGATION_WEIGHTS
+from settings import N, K, DAMPING, RESORTING_FORCE, PROPAGATION_RANGE, PROPAGATION_WEIGHTS, ALPHA, HEIGHT, WAVE_BASE_HEIGHT
 
 class Wave:
     def __init__(self):
@@ -12,11 +12,15 @@ class Wave:
             for offset, weight in enumerate(PROPAGATION_WEIGHTS, start=1):
                 sum_neighbors += weight * (self.y[i - offset] + self.y[i + offset])
             total_weight = 2 * sum(PROPAGATION_WEIGHTS)
+            # facteur de non-linéarité
+            non_linear = 1 + ALPHA * (self.y[i] / (HEIGHT - WAVE_BASE_HEIGHT))
             acceleration = K * ((sum_neighbors - total_weight * self.y[i]) / total_weight)
             self.velocity[i] += acceleration
             self.velocity[i] *= DAMPING
             self.velocity[i] -= RESORTING_FORCE * self.y[i]
         self.y += self.velocity
+
+        self.y += np.random.normal(0, 0.2, size=N)  # Ajout de bruit aléatoire
 
     def smooth(self, smoothing_factor=0.3):
         smoothed = self.y.copy()
@@ -33,3 +37,10 @@ class Wave:
             if 0 <= idx < N:
                 attenuation = np.exp(-abs(i) / (spread / 2))
                 self.y[idx] += force * attenuation
+    
+    def apply_compression_force(self, force, spread=8):
+        for i in range(1, spread + 1):
+            index = len(self.y) - i  # Indices proches du bord droit
+            if index >= 0:
+                attenuation = 1 - (i / (spread + 1))
+                self.y[index] += force * attenuation

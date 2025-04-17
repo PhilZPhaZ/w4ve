@@ -15,7 +15,7 @@ class Boat:
         self.jump_force = -5
         self.gravity = 0.5
         self.display_angle = 0.0
-        self.lerp_speed = 0.1
+        self.lerp_speed = 0.3
         self.jump_timer = 0
         self.rotation_factor = 0.5
         self.facing_right = True
@@ -38,10 +38,14 @@ class Boat:
                 self.in_air = False
                 self.jump_timer = 0
 
-        if not self.in_air:
+        """if not self.in_air:
             self.display_angle = slope
         else:
-            self.display_angle += (0 - self.display_angle) * self.lerp_speed
+            self.display_angle += (0 - self.display_angle) * self.lerp_speed"""
+
+        # Angle interpolation pour décollage ET atterrissage progressif
+        target_angle = slope if not self.in_air else 0
+        self.display_angle += (target_angle - self.display_angle) * self.lerp_speed
 
     def move(self, dx):
         self.x += dx
@@ -58,3 +62,12 @@ class Boat:
             rotated_boat = pygame.transform.flip(rotated_boat, True, False)
         rect = rotated_boat.get_rect(center=(self.x + self.width // 2, self.y + self.height // 2))
         screen.blit(rotated_boat, rect.topleft)
+    
+    def reset(self):
+        self.x = WIDTH // 2 - self.width // 2
+        self.y_offset = -20
+        self.in_air = False
+        self.velocity_y = 0
+        self.jump_timer = 0
+        self.display_angle = 0.0
+        self.facing_right = True
