@@ -19,8 +19,15 @@ class Boat:
         self.jump_timer = 0
         self.rotation_factor = 0.5
         self.facing_right = True
+        self.landing = False
+        self.was_in_air = False
 
     def update(self, wave_y, clock, slope, wave_surface_y):
+        # mise à jour su landing
+        if self.landing:
+            self.landing = False
+        prev_in_air = self.in_air
+
         if not self.in_air:
             self.y = wave_surface_y
             if wave_y <= self.jump_threshold:
@@ -37,6 +44,8 @@ class Boat:
                 self.velocity_y = 0
                 self.in_air = False
                 self.jump_timer = 0
+
+        self.landing = prev_in_air and not self.in_air
 
         """if not self.in_air:
             self.display_angle = slope
@@ -62,7 +71,7 @@ class Boat:
             rotated_boat = pygame.transform.flip(rotated_boat, True, False)
         rect = rotated_boat.get_rect(center=(self.x + self.width // 2, self.y + self.height // 2))
         screen.blit(rotated_boat, rect.topleft)
-    
+
     def reset(self):
         self.x = WIDTH // 2 - self.width // 2
         self.y_offset = -20
@@ -71,3 +80,10 @@ class Boat:
         self.jump_timer = 0
         self.display_angle = 0.0
         self.facing_right = True
+
+    def jump(self):
+        if not self.in_air:
+            self.in_air = True
+            self.jump_timer = 0
+            self.velocity_y = self.jump_force * 2
+            self.landing = False

@@ -5,6 +5,7 @@ from w4ve import Wave
 from boat import Boat
 from falling_object import FallingObject
 from utils import draw_gradient_background
+from particle import Splash
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -23,6 +24,15 @@ compression_interval = np.random.randint(1000, 3000)
 
 # debug
 debug_mode = True
+
+# particule
+splashes = []
+
+# boat
+prev_speed = boat.velocity_y
+
+# variable qui change si on veux que la vague change de bord quand la vague touche le bord de l'écran
+change_side = False
 
 def apply_random_compression(wave):
     if np.random.rand() < 0.5:
@@ -54,12 +64,16 @@ while running:
                 compression_running = not compression_running
             elif event.key == pygame.K_F3:
                 debug_mode = not debug_mode
+            elif event.key == pygame.K_F4:
+                change_side = not change_side
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT] or keys[pygame.K_q]:
         boat.move(-BOAT_SPEED)
     if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
         boat.move(BOAT_SPEED)
+    if keys[pygame.K_UP] or keys[pygame.K_z]:
+        boat.jump()
 
     # Compression aléatoire
     if compression_running:
@@ -89,11 +103,8 @@ while running:
 
     # Mise à jour de la vague
     for _ in range(SIMULATION_STEPS):
-        wave.update()
-        wave.smooth(smoothing_factor=0.1) # base 0.5
-        # Conditions de réflexion aux bords
-        wave.y[0] = wave.y[1]
-        wave.y[-1] = wave.y[-2]
+        wave.update(change_side)
+        wave.smooth(smoothing_factor=0.3) # base 0.5
 
     # Dessin de la vague
     points = [(x_positions[i], WAVE_BASE_HEIGHT + wave.y[i]) for i in range(N)]
@@ -112,6 +123,24 @@ while running:
     boat.update(wave_height, clock, degrees, wave_surface_y)
     boat.draw(screen)
 
+    # Gestion des éclaboussures
+    if boat.landing:
+        splash_x = boat.x + boat.width // 2
+        splash_y = boat.y + boat.height // 2 - boat.y_offset
+        if prev_speed < 0.1:
+            continue
+        splashes.append(Splash(splash_x, splash_y, num_particles=15, color=(100, 200, 255), speed_factor=abs(prev_speed / 10)))
+
+    # Mise à jour et dessin des éclaboussures
+    for splash in splashes[:]:
+        splash.update()
+        splash.draw(screen)
+        if splash.particles == []:
+            splashes.remove(splash)
+
+    # mise à jour de la vitesse precedente du bateau
+    prev_speed = boat.velocity_y
+
     # debug menu
     if debug_mode:
         font = pygame.font.SysFont("consolas", 20)
@@ -119,6 +148,7 @@ while running:
             f"FPS: {clock.get_fps():.2f}",
             f"Boat Y: {boat.y}",
             f"Boat X: {boat.x}",
+            f"Boat Velocity Y: {boat.velocity_y:.2f}",
             f"Boat Angle: {degrees:.2f}",
             f"Wave Height: {wave_height:.2f}",
             f"Wave Surface Y: {wave_surface_y:.2f}",

@@ -6,21 +6,42 @@ class Wave:
         self.y = np.zeros(N)
         self.velocity = np.zeros(N)
 
-    def update(self):
-        for i in range(PROPAGATION_RANGE, N - PROPAGATION_RANGE):
-            sum_neighbors = 0
-            for offset, weight in enumerate(PROPAGATION_WEIGHTS, start=1):
-                sum_neighbors += weight * (self.y[i - offset] + self.y[i + offset])
-            total_weight = 2 * sum(PROPAGATION_WEIGHTS)
-            # facteur de non-linéarité
-            non_linear = 1 + ALPHA * (self.y[i] / (HEIGHT - WAVE_BASE_HEIGHT))
-            acceleration = K * ((sum_neighbors - total_weight * self.y[i]) / total_weight)
-            self.velocity[i] += acceleration
-            self.velocity[i] *= DAMPING
-            self.velocity[i] -= RESORTING_FORCE * self.y[i]
-        self.y += self.velocity
-
-        self.y += np.random.normal(0, 0.2, size=N)  # Ajout de bruit aléatoire
+    def update(self, change_side=False):
+        #for i in range(PROPAGATION_RANGE, N - PROPAGATION_RANGE):
+        if change_side:
+            for i in range(N):
+                sum_neighbors = 0
+                for offset, weight in enumerate(PROPAGATION_WEIGHTS, start=1):
+                    left = (i - offset) % N
+                    right = (i + offset) % N
+                    # sum_neighbors += weight * (self.y[i - offset] + self.y[i + offset])
+                    sum_neighbors += weight * (self.y[left] + self.y[right])
+                total_weight = 2 * sum(PROPAGATION_WEIGHTS)
+                # facteur de non-linéarité
+                non_linear = 1 + ALPHA * (self.y[i] / (HEIGHT - WAVE_BASE_HEIGHT))
+                acceleration = K * ((sum_neighbors - total_weight * self.y[i]) / total_weight)
+                self.velocity[i] += acceleration
+                self.velocity[i] *= DAMPING
+                self.velocity[i] -= RESORTING_FORCE * self.y[i]
+            self.y += self.velocity
+            self.y += np.random.normal(0, 0.05, size=N)  # Ajout de bruit aléatoire
+        else:
+            for i in range(PROPAGATION_RANGE, N - PROPAGATION_RANGE):
+                sum_neighbors = 0
+                for offset, weight in enumerate(PROPAGATION_WEIGHTS, start=1):
+                    left = (i - offset) % N
+                    right = (i + offset) % N
+                    # sum_neighbors += weight * (self.y[i - offset] + self.y[i + offset])
+                    sum_neighbors += weight * (self.y[left] + self.y[right])
+                total_weight = 2 * sum(PROPAGATION_WEIGHTS)
+                # facteur de non-linéarité
+                non_linear = 1 + ALPHA * (self.y[i] / (HEIGHT - WAVE_BASE_HEIGHT))
+                acceleration = K * ((sum_neighbors - total_weight * self.y[i]) / total_weight)
+                self.velocity[i] += acceleration
+                self.velocity[i] *= DAMPING
+                self.velocity[i] -= RESORTING_FORCE * self.y[i]
+            self.y += self.velocity
+            self.y += np.random.normal(0, 0.05, size=N)  # Ajout de bruit aléatoire
 
     def smooth(self, smoothing_factor=0.3):
         smoothed = self.y.copy()
