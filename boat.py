@@ -56,21 +56,35 @@ class Boat:
         target_angle = slope if not self.in_air else 0
         self.display_angle += (target_angle - self.display_angle) * self.lerp_speed
 
-    def move(self, dx):
+    def move(self, dx, change_side):
         self.x += dx
-        self.x = max(0, min(self.x, WIDTH - self.width))
+        if change_side:
+            self.x = self.x % WIDTH
+        else:
+            self.x = max(0, min(self.x, WIDTH - self.width))
+
         if dx < 0:
             self.facing_right = False
         elif dx > 0:
             self.facing_right = True
 
-    def draw(self, screen):
+    def draw(self, screen, change_side):
         angle = -self.display_angle if self.facing_right else self.display_angle
         rotated_boat = pygame.transform.rotate(self.image, angle)
         if not self.facing_right:
             rotated_boat = pygame.transform.flip(rotated_boat, True, False)
         rect = rotated_boat.get_rect(center=(self.x + self.width // 2, self.y + self.height // 2))
         screen.blit(rotated_boat, rect.topleft)
+
+        if change_side:
+            # Dessin du bateau à gauche et à droite de l'écran
+            if self.x < self.width:
+                rect_right = rotated_boat.get_rect(center=(self.x + WIDTH + self.width // 2, self.y + self.height // 2))
+                screen.blit(rotated_boat, rect_right.topleft)
+            # Si le bateau est proche du bord droit, dessine-le aussi à gauche
+            if self.x > WIDTH - self.width:
+                rect_left = rotated_boat.get_rect(center=(self.x - WIDTH + self.width // 2, self.y + self.height // 2))
+                screen.blit(rotated_boat, rect_left.topleft)
 
     def reset(self):
         self.x = WIDTH // 2 - self.width // 2
