@@ -51,6 +51,8 @@ birds = []
 for i in range(3):  # Exemple : 3 oiseaux
     birds.append(AnimatedSprite((600 + i*50, 50 + 50*i), frames))
 
+score = 0
+
 def apply_random_compression(wave):
     if np.random.rand() < 0.5:
         force = np.random.randint(200, 400)
@@ -92,6 +94,8 @@ while running:
         boat.move(BOAT_SPEED, change_side)
     if keys[pygame.K_UP] or keys[pygame.K_z]:
         boat.jump()
+    if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+        boat.smash_dash(wave)
 
     # Compression aléatoire
     if compression_running:
@@ -138,7 +142,7 @@ while running:
     slope = wave.y[boat_index + 1] - wave.y[boat_index - 1]
     angle = np.arctan(slope / (x_positions[1] - x_positions[0])) * boat.rotation_factor
     degrees = np.degrees(angle)
-    boat.update(wave_height, clock, degrees, wave_surface_y)
+    boat.update(wave_height, clock, degrees, wave_surface_y, wave)
     boat.draw(screen, change_side)
 
     # Gestion des éclaboussures
@@ -168,11 +172,14 @@ while running:
             f"Boat X: {boat.x}",
             f"Boat Velocity Y: {boat.velocity_y:.2f}",
             f"Boat Angle: {degrees:.2f}",
+            f"Boat max height: {boat.max_height:.2f}",
+            f"Boat dash cooldown: {boat.dash_cooldown:.2f}",
             f"Wave Height: {wave_height:.2f}",
             f"Wave Surface Y: {wave_surface_y:.2f}",
             f"Wave Index: {boat_index}",
             f"Wave Y: {wave.y[boat_index]:.2f}",
             f"Mode sans rebond" if change_side else "Mode rebond",
+            f"Score: {score}",
         ]
         for i, text in enumerate(debug_text):
             debug_surface = font.render(text, True, (255, 255, 255))
@@ -195,6 +202,7 @@ while running:
     for bird in birds:
         if boat_rect.colliderect(bird.rect) and boat.velocity_y > 0 and not bird.dead:
             boat.velocity_y = -5
+            score += 1
             bird.death()
 
     pygame.display.flip()

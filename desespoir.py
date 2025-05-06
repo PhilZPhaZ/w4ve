@@ -31,7 +31,7 @@ propagation_weights = np.array([0.5, 0.3, 0.2])
 x_positions = np.linspace(0, WIDTH, N)
 
 # sprite pygame
-boat_image = pygame.image.load("boat.png").convert_alpha()
+boat_image = pygame.image.load("assets/boat.png").convert_alpha()
 boat_image = pygame.transform.scale(boat_image, (50, 50))
 boat_width, boat_height = boat_image.get_size()
 y_offset = -20

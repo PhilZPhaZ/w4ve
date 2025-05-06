@@ -1,6 +1,7 @@
 import pygame
 import numpy as np
 from settings import WIDTH, HEIGHT, N, BOAT_IMAGE_PATH
+import time
 
 class Boat:
     def __init__(self):
@@ -21,8 +22,13 @@ class Boat:
         self.facing_right = True
         self.landing = False
         self.was_in_air = False
+        self.dash = False
+        self.dash_cooldown = 0.5
+        self.last_dash_time = 0
+        self.max_height = 0
+        self.prev_max_height = 0
 
-    def update(self, wave_y, clock, slope, wave_surface_y):
+    def update(self, wave_y, clock, slope, wave_surface_y, wave=None):
         # mise à jour su landing
         if self.landing:
             self.landing = False
@@ -34,16 +40,23 @@ class Boat:
                 self.in_air = True
                 self.jump_timer = 0
                 self.velocity_y = -2 * (self.jump_threshold - wave_y) / 20
+                self.max_height = self.y
         else:
             self.jump_timer += clock.get_time()
             if self.jump_timer >= 100:
                 self.velocity_y += self.gravity
             self.y += self.velocity_y
+            # mise à jour de la hauteur maximale
+            if self.max_height == 0 or self.y < self.max_height:
+                self.max_height = self.y
             if self.y >= wave_surface_y:
                 self.y = wave_surface_y
                 self.velocity_y = 0
                 self.in_air = False
                 self.jump_timer = 0
+
+                # mise à jour de la hauteur maximale
+                self.max_height = 0
 
         self.landing = prev_in_air and not self.in_air
 
@@ -55,6 +68,16 @@ class Boat:
         # Angle interpolation pour décollage ET atterrissage progressif
         target_angle = slope if not self.in_air else 0
         self.display_angle += (target_angle - self.display_angle) * self.lerp_speed
+
+        # Verifier le dash
+        if self.dash:
+            # verifier si le bateau touche la vague
+            if self.y >= wave_surface_y:
+                self.dash= False
+                force = abs(self.prev_max_height - wave_surface_y) * 1.5
+                wave.apply_perturbation(int((self.x + self.width // 2) / WIDTH * N), force=force, spread=15)
+
+        self.prev_max_height = self.max_height
 
     def move(self, dx, change_side):
         self.x += dx
@@ -101,3 +124,10 @@ class Boat:
             self.jump_timer = 0
             self.velocity_y = self.jump_force * 2
             self.landing = False
+    
+    def smash_dash(self, waves):
+        now = time.time()
+        if self.in_air and not self.dash and (now - self.last_dash_time) >= self.dash_cooldown:
+            self.dash = True
+            self.velocity_y = -self.jump_force * 6
+            self.last_dash_time = now
